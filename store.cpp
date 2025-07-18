@@ -6,7 +6,7 @@ void Store::buyProducts(){
 
 }
 
-Customer Store::getCustomer(){
+// Customer Store::getCustomer(){
 
-    return;
-}
+//     return;
+// }

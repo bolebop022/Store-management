@@ -1,14 +1,13 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
 
 #include <QSplashScreen>
 #include <QTimer>
+#include <QLabel>
+#include <QMenuBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
 
     QSplashScreen *splash = new QSplashScreen;
     splash->setPixmap(QPixmap(":/resources/splash.png"));
@@ -29,19 +28,33 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupMenu() {
     QMenu* fileMenu = menuBar()->addMenu("File");
+    QMenu* addMenu = menuBar()->addMenu("Add");
     QMenu* helpMenu = menuBar()->addMenu("Help");
 
     QAction* exitAction = new QAction("Exit", this);
     connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
     fileMenu->addAction(exitAction);
 
+    QAction* addProductAction = new QAction("Add Product");
+    connect(addProductAction, &QAction::triggered, this, &MainWindow::addProduct);
+
     QAction* aboutAction = new QAction("About", this);
     QAction* helpAction = new QAction("Help", this);
-    connect(aboutAction, &QAction::triggered, this, &StoreWindow::showAbout);
-    connect(helpAction, &QAction::triggered, this, &StoreWindow::showHelp);
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
+    connect(helpAction, &QAction::triggered, this, &MainWindow::showHelp);
 
     helpMenu->addAction(aboutAction);
     helpMenu->addAction(helpAction);
+}
+
+void MainWindow::setupToolbar(){
+    QToolBar* toolbar = addToolBar("Main Toolbar");
+
+    QAction* refreshAction = new QAction("Refresh", this);
+    QAction* buyAction = new QAction("Buy", this) ;
+
+    addAction(refreshAction);
+    addAction(buyAction);
 }
 
 void MainWindow::setupCentralWidget() {
@@ -55,15 +68,14 @@ void MainWindow::setupCentralWidget() {
     setCentralWidget(centralWidget);
 }
 
+void MainWindow::addProduct(){
+
+}
+
 void MainWindow::showAbout() {
     QMessageBox::about(this, "About Store App", "A Qt-based Store Tracking System");
 }
 
 void MainWindow::showHelp() {
     QMessageBox::information(this, "Help", "This app tracks purchases and customers in a store.");
-}
-
-MainWindow::~MainWindow()
-{
-    delete ui;
 }

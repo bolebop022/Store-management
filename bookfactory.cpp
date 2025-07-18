@@ -2,6 +2,6 @@
 #include "book.h"
 
 
-std::unique_ptr<Product> BookFactory::createProduct(const std::string& name) const{
+std::unique_ptr<Product> BookFactory::createProduct(const QString& name) const{
     return std::make_unique<Book>(name);
 }

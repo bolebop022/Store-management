@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QVBoxLayout>
+#include <QTableWidget>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,14 +20,16 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
     void setupMenu();
     void setupToolbar();
     void setupCentralWidget();
+    void addProduct();
     void showAbout();
     void showHelp();
 
 private:
-    Ui::MainWindow *ui;
+
+    QTableWidget* productTable;
+    QLabel* statusLabel;
 };
 #endif // MAINWINDOW_H
