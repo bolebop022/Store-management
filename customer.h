@@ -10,6 +10,7 @@ class Customer
 public:
     Customer(const QString& name);
     const Product& buyProduct(const Product& product);
+    const QString& getName() const;
 private:
     QString name;
     std::map<Product, int> productsPurchased;

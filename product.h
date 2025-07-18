@@ -14,6 +14,8 @@ public:
     bool operator<(const Product& other) const {
         return productName < other.productName;  // or your own logic to compare products
     }
+    const QString& getName() const {return productName;};
+    const QString& getType() const {return productType;};
 };
 
 #endif // PRODUCT_H

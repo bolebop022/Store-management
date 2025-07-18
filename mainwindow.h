@@ -20,11 +20,17 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = nullptr);
+
+    void initializeDummyCustomers();
+
     void setupMenu();
     void setupToolbar();
     void setupCentralWidget();
     void addProduct();
     void setUpProductWindow();
+    void buyProduct();
+    void setUpBuyProductWindow();
+
     void showAbout();
     void showHelp();
 

@@ -1,5 +1,8 @@
 #include "mainwindow.h"
+#include "buyproductwindow.h"
+#include "customer.h"
 #include "productwindow.h"
+#include "store.h"
 
 #include <QSplashScreen>
 #include <QTimer>
@@ -18,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Store Management");
     setWindowIcon(QIcon(":/resources/app_icon.png"));
 
+    initializeDummyCustomers();
     setupMenu();
     setupToolbar();
     setupCentralWidget();
@@ -40,6 +44,10 @@ void MainWindow::setupMenu() {
     connect(addProductAction, &QAction::triggered, this, &MainWindow::addProduct);
     addMenu->addAction(addProductAction);
 
+    QAction* buyProductAction = new QAction("Buy Product");
+    connect(buyProductAction, &QAction::triggered, this, &MainWindow::buyProduct);
+    addMenu->addAction(buyProductAction);
+
     QAction* aboutAction = new QAction("About", this);
     QAction* helpAction = new QAction("Help", this);
     connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
@@ -47,6 +55,13 @@ void MainWindow::setupMenu() {
 
     helpMenu->addAction(aboutAction);
     helpMenu->addAction(helpAction);
+}
+
+void MainWindow::initializeDummyCustomers() {
+    Store& store = Store::getInstance();
+    store.addCustomer(Customer("Alice"));
+    store.addCustomer(Customer("Bob"));
+    store.addCustomer(Customer("Charlie"));
 }
 
 void MainWindow::setupToolbar(){
@@ -64,7 +79,7 @@ void MainWindow::setupCentralWidget() {
     QVBoxLayout* layout = new QVBoxLayout(centralWidget);
 
     productTable = new QTableWidget(0, 3);
-    productTable->setHorizontalHeaderLabels({"Product", "Type", "Stock"});
+    productTable->setHorizontalHeaderLabels({"Transaction", "Type", "Quantity"});
     layout->addWidget(productTable);
 
     setCentralWidget(centralWidget);
@@ -72,6 +87,10 @@ void MainWindow::setupCentralWidget() {
 
 void MainWindow::addProduct(){
     setUpProductWindow();
+}
+
+void MainWindow::buyProduct(){
+    setUpBuyProductWindow();
 }
 
 void MainWindow::showAbout() {
@@ -85,4 +104,9 @@ void MainWindow::showHelp() {
 void MainWindow::setUpProductWindow(){
     ProductWindow* productWindow = new ProductWindow(this);
     productWindow->show();
+}
+
+void MainWindow::setUpBuyProductWindow(){
+    BuyProductWindow* buyProductWindow = new BuyProductWindow(this);
+    buyProductWindow->show();
 }

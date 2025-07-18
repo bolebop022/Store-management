@@ -6,3 +6,7 @@ const Product& Customer::buyProduct(const Product& product){
     // productsPurchased[product] += 1;
     return product;
 }
+
+const QString& Customer::getName() const{
+    return name;
+}

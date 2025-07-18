@@ -15,7 +15,7 @@ public:
     Transactions& getTransactions();
 
 
-    void buyProducts();
+    bool buyProduct(const Customer& customer, const Product& product, int quantity);
 
     // ✅ Getters
     const QMap<Product, int>& getProducts() const;

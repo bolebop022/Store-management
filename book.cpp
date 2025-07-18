@@ -1,3 +1,3 @@
 #include "book.h"
 
-Book::Book(const QString& name) : Product("B", name) {};
+Book::Book(const QString& name) : Product(name, "B") {};
