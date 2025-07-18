@@ -9,6 +9,11 @@ protected:
     QString productName;
     QString productType;
     Product(const QString& productName,const QString& productType): productName(productName), productType(productType){};
+
+public:
+    bool operator<(const Product& other) const {
+        return productName < other.productName;  // or your own logic to compare products
+    }
 };
 
 #endif // PRODUCT_H

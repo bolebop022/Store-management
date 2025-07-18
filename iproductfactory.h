@@ -6,6 +6,11 @@
 
 #include "product.h"
 
+enum class ItemType {
+    Book,
+    Magazine
+};
+
 class IProductFactory{
 public:
     virtual ~IProductFactory() = default;

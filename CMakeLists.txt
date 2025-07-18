@@ -35,6 +35,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Store
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        productwindow.h productwindow.cpp
+        magazinefactory.h magazinefactory.cpp
     )
 else()
     add_executable(Store

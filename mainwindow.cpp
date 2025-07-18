@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "productwindow.h"
 
 #include <QSplashScreen>
 #include <QTimer>
@@ -37,6 +38,7 @@ void MainWindow::setupMenu() {
 
     QAction* addProductAction = new QAction("Add Product");
     connect(addProductAction, &QAction::triggered, this, &MainWindow::addProduct);
+    addMenu->addAction(addProductAction);
 
     QAction* aboutAction = new QAction("About", this);
     QAction* helpAction = new QAction("Help", this);
@@ -69,7 +71,7 @@ void MainWindow::setupCentralWidget() {
 }
 
 void MainWindow::addProduct(){
-
+    setUpProductWindow();
 }
 
 void MainWindow::showAbout() {
@@ -78,4 +80,9 @@ void MainWindow::showAbout() {
 
 void MainWindow::showHelp() {
     QMessageBox::information(this, "Help", "This app tracks purchases and customers in a store.");
+}
+
+void MainWindow::setUpProductWindow(){
+    ProductWindow* productWindow = new ProductWindow(this);
+    productWindow->show();
 }

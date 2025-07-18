@@ -24,6 +24,7 @@ public:
     void setupToolbar();
     void setupCentralWidget();
     void addProduct();
+    void setUpProductWindow();
     void showAbout();
     void showHelp();
 
