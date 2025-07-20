@@ -1,5 +1,6 @@
 #include "store.h"
 #include <QDebug>
+#include <QTime>
 
 Store* Store::transactionStore_ = nullptr;
 
@@ -14,11 +15,11 @@ Store& Store::getInstance() {
     return *transactionStore_;
 }
 
-Transactions& Store::getTransactions() {
-    return Transactions::getInstance();
+const QVector<Transaction>& Store::getTransactions() const {
+    return transactions;
 }
 
-bool Store::buyProduct(const Customer& customer, const Product& product, int quantity) {
+bool Store::buyProduct(Customer& customer, const Product& product, int quantity) {
     // Input validation
     if (quantity <= 0) {
         qDebug() << "Invalid quantity: " << quantity;
@@ -56,24 +57,30 @@ bool Store::buyProduct(const Customer& customer, const Product& product, int qua
     // Process the purchase
     try {
         // Reduce inventory
-        // if (!reduceProductQuantity(product, quantity)) {
-        //     qDebug() << "Failed to reduce product quantity";
-        //     return false;
-        // }
+        if (!reduceProductQuantity(product, quantity)) {
+            qDebug() << "Failed to reduce product quantity";
+            return false;
+        }
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
 
-        // // Optional: Create and store transaction record
-        // Transaction transaction;
-        // transaction.setCustomer(customer);
-        // transaction.setProduct(product);
-        // transaction.setQuantity(quantity);
-        // transaction.setTimestamp(QDateTime::currentDateTime());
-        // transaction.setTotalPrice(product.getPrice() * quantity);
+        // Create and store transaction record
+        Transaction transaction (
+            QDateTime::currentDateTime(),
+            customer.getName(),
+            product.getName(),
+            product.getType(),
+            quantity);
 
-        // addTransaction(transaction);
 
-        // qDebug() << "Purchase successful - Customer: " << customer.getName()
-        //          << ", Product: " << product.getName()
-        //          << ", Quantity: " << quantity;
+        // Add the product to the purchased list
+        customer.buyProduct(product, quantity);
+
+        // Record the transaction
+        addTransaction(transaction);
+
+        qDebug() << "Purchase successful - Customer: " << customer.getName()
+                 << ", Product: " << product.getName()
+                 << ", Quantity: " << quantity;
 
         return true;
 
@@ -81,6 +88,24 @@ bool Store::buyProduct(const Customer& customer, const Product& product, int qua
         qDebug() << "Error during purchase: " << e.what();
         return false;
     }
+}
+
+bool Store::reduceProductQuantity(const Product& product, int quantity) {
+    if (!products.contains(product)) {
+        return false;
+    }
+
+    int currentQuantity = products.value(product);
+    if (currentQuantity < quantity) {
+        return false;
+    }
+
+    int newQuantity = currentQuantity - quantity;
+
+    // Update quantity
+    products[product] = newQuantity;
+
+    return true;
 }
 
 // ✅ Getters
@@ -92,6 +117,35 @@ const QVector<Customer>& Store::getCustomers() const {
     return customers;
 }
 
+Customer* Store::findCustomerByName(const QString& name){
+
+    for (Customer& customer : customers) {
+        if (customer.getName().compare(name, Qt::CaseInsensitive) == 0) {
+            return &customer; // Return immediately when match is found
+        }
+    }
+    return nullptr;
+}
+
+const Customer* Store::accessCustomerByName(const QString& name) {
+    for (Customer& customer : customers) {
+        if (customer.getName().compare(name, Qt::CaseInsensitive) == 0) {
+            return &customer;
+        }
+    }
+    return nullptr;
+}
+
+const Product* Store::accessProductByName(const QString& name){
+    for (auto it = products.begin(); it != products.end(); ++it) {
+        const Product& product = it.key();
+        int quantity = it.value();
+        return &product;
+        // Use product and quantity here
+    }
+    return nullptr;
+}
+
 // ✅ Setters
 void Store::setCustomers(const QVector<Customer>& newCustomers) {
     customers = newCustomers;
@@ -99,12 +153,17 @@ void Store::setCustomers(const QVector<Customer>& newCustomers) {
 
 // ✅ Adders
 void Store::addProduct(std::unique_ptr<Product> product, int quantity) {
+    // Find products
     if (product) {
-        products[*product] = quantity;  // Dereference unique_ptr to Product
+        products[*product] += quantity;  // Dereference unique_ptr to Product
     }
 }
 
 void Store::addCustomer(const Customer& customer) {
     customers.append(customer);
+}
+
+void Store::addTransaction(const Transaction& transaction){
+    transactions.append(transaction);
 }
 

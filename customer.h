@@ -9,8 +9,10 @@ class Customer
 {
 public:
     Customer(const QString& name);
-    const Product& buyProduct(const Product& product);
+    void buyProduct(const Product& product, int quantity);
     const QString& getName() const;
+    const std::map<Product, int>& getProductsPurchased() const;
+
 private:
     QString name;
     std::map<Product, int> productsPurchased;

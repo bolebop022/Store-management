@@ -2,11 +2,14 @@
 
 Customer::Customer(const QString& name): name(name) {}
 
-const Product& Customer::buyProduct(const Product& product){
-    // productsPurchased[product] += 1;
-    return product;
+void Customer::buyProduct(const Product& product, int quantity){
+    productsPurchased[product] += quantity;
 }
 
 const QString& Customer::getName() const{
     return name;
+}
+
+const std::map<Product,int>& Customer::getProductsPurchased() const{
+    return productsPurchased;
 }

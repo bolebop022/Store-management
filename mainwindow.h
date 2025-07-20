@@ -7,6 +7,8 @@
 #include <QStatusBar>
 #include <QVBoxLayout>
 #include <QTableWidget>
+#include <QStandardItemModel>
+#include <QTreeView>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -35,8 +37,11 @@ public:
     void showHelp();
 
 private:
-
+    void refreshTreeView();
+    void buildTreeView(QMap<QString, QMap<QDateTime, QVector<QPair<QString,int>>>>& transactionViewModel);
     QTableWidget* productTable;
     QLabel* statusLabel;
+    QStandardItemModel* model;
+    QTreeView *treeView;
 };
 #endif // MAINWINDOW_H

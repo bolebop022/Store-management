@@ -17,7 +17,7 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         store.h store.cpp
-        transactions.h transactions.cpp
+
         customer.h customer.cpp
         product.h
         book.h book.cpp
@@ -38,6 +38,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         productwindow.h productwindow.cpp
         magazinefactory.h magazinefactory.cpp
         buyproductwindow.h buyproductwindow.cpp
+        transaction.h transaction.cpp
     )
 else()
     add_executable(Store

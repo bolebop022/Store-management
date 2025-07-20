@@ -3,11 +3,16 @@
 #include "customer.h"
 #include "productwindow.h"
 #include "store.h"
+#include "transaction.h"
+#include "bookfactory.h"
 
 #include <QSplashScreen>
 #include <QTimer>
 #include <QLabel>
 #include <QMenuBar>
+#include <QStandardItemModel>
+#include <QTreeView>
+#include <QMap>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -78,11 +83,91 @@ void MainWindow::setupCentralWidget() {
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(centralWidget);
 
-    productTable = new QTableWidget(0, 3);
-    productTable->setHorizontalHeaderLabels({"Transaction", "Type", "Quantity"});
-    layout->addWidget(productTable);
+    treeView = new QTreeView();
+
+    // Model with 3 columns
+    model = new QStandardItemModel();
+    model->setHorizontalHeaderLabels(QStringList() << "Transaction" << "Type" << "Quantity");
+
+    // Simulate data
+    // Store& store = Store::getInstance();
+    // std::unique_ptr<IProductFactory> factory;
+    // factory = std::make_unique<BookFactory>();
+    // std::unique_ptr<Product> firstProd = factory->createProduct("Great Gatsby");
+    // int firstQty = 3;
+    // store.addProduct(std::move(firstProd), firstQty);
+    // const Product* prodPtr = store.accessProductByName("Great Gatsby");
+    // Customer firstCus("John");
+    // store.addCustomer(firstCus);
+    // store.buyProduct(firstCus, *prodPtr , 2);
+
+    refreshTreeView();
+
+    treeView->setModel(model);
+    layout->addWidget(treeView);
 
     setCentralWidget(centralWidget);
+}
+
+void MainWindow::refreshTreeView(){
+    model->clear();
+    model->setHorizontalHeaderLabels(QStringList() << "Transaction" << "Type" << "Quantity");
+
+    Store& store = Store::getInstance();
+    // Group the transactions
+    QMap<QString, QMap<QDateTime, QVector<QPair<QString,int>>>> transactionViewModel;
+
+    const auto& transactions = store.getTransactions();
+    for (const Transaction& t : transactions) {
+        const QString& name = t.getCustomerName();
+        const QDateTime& time = t.getTimestamp();
+        const QString& item = t.getItemPurchased();
+        int qty = t.getQuantity();
+
+        transactionViewModel[name][time].append(qMakePair(item, qty));
+    }
+    // Populate QTreeView
+    buildTreeView(transactionViewModel);
+
+
+}
+
+void MainWindow::buildTreeView(QMap<QString, QMap<QDateTime, QVector<QPair<QString,int>>>>& transactionViewModel){
+    // Display the transactions
+    for (auto customerIt = transactionViewModel.begin(); customerIt != transactionViewModel.end(); ++customerIt) {
+        QStandardItem* customerName = new QStandardItem(customerIt.key());
+
+
+        QList<QStandardItem*> customerRow;
+        customerRow << customerName;
+        model->appendRow(customerRow);
+
+        // Add the child row
+        const auto& timestampMap = customerIt.value();
+        for (auto timeIt = timestampMap.begin(); timeIt != timestampMap.end(); ++timeIt) {
+            QString timestampStr = timeIt.key().toString("yyyy-MM-dd HH:mm");
+            QStandardItem* timestamp = new QStandardItem(timestampStr);
+
+
+            QList<QStandardItem*> timestampRow;
+            timestampRow << timestamp;
+            customerRow[0]->appendRow(timestampRow);
+
+            // Add the subchild
+            const QVector<QPair<QString, int>>& items = timeIt.value();
+            for (const auto& itemPair : items) {
+                QString itemName = itemPair.first;
+                int quantity = itemPair.second;
+                QStandardItem* item = new QStandardItem(itemName);
+                QStandardItem* qty = new QStandardItem(QString::number(quantity));
+
+                QList<QStandardItem*> itemRow;
+                itemRow << item << qty;
+                timestampRow[0]->appendRow(itemRow);
+            }
+        }
+    }
+    treeView->setModel(model);
 }
 
 void MainWindow::addProduct(){
@@ -108,5 +193,6 @@ void MainWindow::setUpProductWindow(){
 
 void MainWindow::setUpBuyProductWindow(){
     BuyProductWindow* buyProductWindow = new BuyProductWindow(this);
+    connect(buyProductWindow, &BuyProductWindow::transactionCompleted, this, &MainWindow::refreshTreeView);
     buyProductWindow->show();
 }

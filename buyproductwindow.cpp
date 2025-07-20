@@ -1,28 +1,27 @@
 #include "buyproductwindow.h"
-#include "bookfactory.h"
-#include "iproductfactory.h"
-#include "magazinefactory.h"
 #include "store.h"
 #include <QBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
-#include <qlineedit.h>
+#include <QLineEdit>
 #include <QTimer>
-#include <qpushbutton.h>
+#include <QPushButton>
+#include <QListView>
 
 BuyProductWindow::BuyProductWindow(QWidget* parent): QDialog(parent) {
     setWindowTitle("Store");
     QVBoxLayout* layout = new QVBoxLayout(this);
     QLabel* info = new QLabel("Complete the required data");
 
-    QHBoxLayout* customerLayout = new QHBoxLayout(this);
-    QHBoxLayout* itemNameLayout = new QHBoxLayout(this);
-    QHBoxLayout* itemTypeLayout = new QHBoxLayout(this);
-    QHBoxLayout* itemQuantityLayout = new QHBoxLayout(this);
+    QHBoxLayout* customerLayout = new QHBoxLayout();
+    QHBoxLayout* itemNameLayout = new QHBoxLayout();
+    QHBoxLayout* itemTypeLayout = new QHBoxLayout();
+    QHBoxLayout* itemQuantityLayout = new QHBoxLayout();
 
     QLabel* customerLabel = new QLabel("Select the customer:");
     customerCBox = new QComboBox(this);
     loadCustomers();
+
     customerLayout->addWidget(customerLabel);
     customerLayout->addWidget(customerCBox);
 
@@ -34,12 +33,13 @@ BuyProductWindow::BuyProductWindow(QWidget* parent): QDialog(parent) {
 
     QLabel* itemTypeLabel = new QLabel("Item type:");
     itemType = new QLabel("");
-    // Change test dynamically
-    connect(itemNameCBox, QOverload<int>::of(&QComboBox::currentIndexChanged)
-            , this, &BuyProductWindow::updateProductType);
 
+    // Change product type dynamically
+    connect(itemNameCBox, QOverload<int>::of(&QComboBox::currentIndexChanged)
+            ,this, &BuyProductWindow::updateProductType);
 
     itemTypeLayout->addWidget(itemTypeLabel);
+    itemTypeLayout->addWidget(itemType);
 
     QLabel* itemQuantityLabel = new QLabel("Item Quantity:");
     itemQuantitySBox = new QDoubleSpinBox(this);
@@ -48,20 +48,29 @@ BuyProductWindow::BuyProductWindow(QWidget* parent): QDialog(parent) {
     itemQuantityLayout->addWidget(itemQuantitySBox);
     itemQuantityLayout->addWidget(addItemButton);
 
-
+    transactionModel = new QStringListModel(this);
+    transactionView = new QListView(this);
     connect(addItemButton, &QPushButton::clicked, this, &BuyProductWindow::addItem);
+    connect(customerCBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &BuyProductWindow::onCustomerSelectionChanged);
 
+    if (customerCBox->count() > 0) {
+        onCustomerSelectionChanged(0);
+    }
+    if(itemNameCBox->count() > 0)
+        updateProductType(itemNameCBox->currentIndex());
 
     layout->addWidget(info);
     layout->addLayout(customerLayout);
     layout->addLayout(itemNameLayout);
     layout->addLayout(itemTypeLayout);
     layout->addLayout(itemQuantityLayout);
+    layout->addWidget(transactionView);
 }
 
 void BuyProductWindow::addItem(){
-    QString customerName = customerCBox->currentData().toString();
-    QString itemName = itemNameCBox->currentData().toString();
+    QString customerName = customerCBox->currentText();
+    QString itemName = itemNameCBox->currentText();
 
     double itemQuantity = itemQuantitySBox->value();
 
@@ -80,14 +89,7 @@ void BuyProductWindow::addItem(){
 
     try {
         // Find the customer
-        Customer* selectedCustomer = nullptr;
-        const QVector<Customer>& customers = store.getCustomers();
-        for (const Customer& customer : customers) {
-            if (customer.getName() == customerName) {
-                selectedCustomer = const_cast<Customer*>(&customer);
-                break;
-            }
-        }
+        Customer* selectedCustomer = store.findCustomerByName(customerName);
 
         if (!selectedCustomer) {
             QMessageBox::warning(this, "Error", "Selected customer not found.");
@@ -95,19 +97,14 @@ void BuyProductWindow::addItem(){
         }
 
         // Find the product
-        Product* selectedProduct = nullptr;
-        const QMap<Product, int>& products = store.getProducts();
-        for (const auto& product : products.keys()) {
-            if (product.getName() == itemName) {
-                selectedProduct = const_cast<Product*>(&product);
-                break;
-            }
-        }
+        const Product* selectedProduct = store.accessProductByName(itemName);
 
         if (!selectedProduct) {
             QMessageBox::warning(this, "Error", "Selected product not found.");
             return;
         }
+
+        const QMap<Product, int>& products = store.getProducts();
 
         // Check if enough quantity is available
         int availableQuantity = products.value(*selectedProduct, 0);
@@ -130,8 +127,8 @@ void BuyProductWindow::addItem(){
             // Reset quantity to default
             itemQuantitySBox->setValue(1.0);
 
-            // Refresh the products list to show updated inventory
-            loadProducts();
+            loadCustomerTransaction(*selectedCustomer);
+            emit transactionCompleted();
         } else {
             QMessageBox::warning(this, "Purchase Failed", "Failed to complete the purchase transaction.");
         }
@@ -139,6 +136,43 @@ void BuyProductWindow::addItem(){
     } catch (const std::exception& e) {
         QMessageBox::critical(this, "Error", QString("Failed to process purchase: %1").arg(e.what()));
     }
+}
+
+void BuyProductWindow::onCustomerSelectionChanged(int index) {
+
+    if (index < 0 || index >= customerCBox->count()) {
+        return;
+    }
+
+    transactionModel->setStringList(QStringList()); // or clear model
+
+    QString selectedCustomerName = customerCBox->itemText(index);
+    Store& store = Store::getInstance();
+    const Customer* selectedCustomer = store.accessCustomerByName(selectedCustomerName);
+
+    if (selectedCustomer) {
+        loadCustomerTransaction(*selectedCustomer);
+    } else {
+        transactionModel->setStringList(QStringList()); // or clear model
+    }
+}
+
+void BuyProductWindow::loadCustomerTransaction(const Customer& customer){
+    if(!customer.getProductsPurchased().empty())
+    {
+        for(const auto& purchasedProduct : customer.getProductsPurchased()){
+        QString item = QString("%1 (Qty: %2)").arg(purchasedProduct.first.getName()).arg(itemQuantitySBox->value());
+
+        int row = transactionModel->rowCount(); // Get the position to add at the end
+        if (transactionModel->insertRows(row, 1)) { // Insert one row at the end
+            QModelIndex index = transactionModel->index(row, 0); // Get the model index for the new row
+            transactionModel->setData(index, item); // Set the data for the new item
+        }
+    }
+        }
+    else
+        transactionModel->setStringList(QStringList());
+    transactionView->setModel(transactionModel);
 }
 
 
@@ -174,28 +208,33 @@ void BuyProductWindow::loadProducts() {
 }
 
 void BuyProductWindow::updateProductType(int index) {
-    if (index < 0)
+    if (index < 0 || index >= itemNameCBox->count()) {
+        itemType->setText("");
         return;
+    }
 
     // Get product name from combo box at selected index
     QString selectedProductName = itemNameCBox->itemText(index);
 
-    // Find product in Store by name
-    Store& store = Store::getInstance();
-    const QMap<Product,int>& products = store.getProducts();
-
-    // Iterate products to find matching name and get its type
-    for (const auto& product : products.keys()) {
-        if (product.getName() == selectedProductName) {
-            QString typeString;
-            if(product.getType() == "B")    // assuming you have getType() that returns an enum or string
-                typeString = "B";
-            else if(product.getType() == "M")
-                typeString = "Magazine";
-            else
-                typeString = "Unknown";
-            itemType->setText(typeString);
-        }
+    if (selectedProductName.isEmpty()) {
+        itemType->setText("");
+        return;
     }
+
+    Store& store = Store::getInstance();
+    const Product* product = store.accessProductByName(selectedProductName);
+
+    if (product) {
+        itemType->setText(product->getType());
+    } else {
+        itemType->setText("");
+    }
+
 }
 
+const Customer& BuyProductWindow::loadCurrentSBoxCustomer(){
+    QString selectedCustomerName = customerCBox->currentText();
+    Store& store = Store::getInstance();
+    const Customer* selectedCustomer = store.accessCustomerByName(selectedCustomerName);
+    return *selectedCustomer;
+}
